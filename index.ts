@@ -308,7 +308,7 @@ const loadedTreeIds = new Set<string>();
 let cachedFeatures: any[] = [];
 
 const CACHE_KEY = 'tree_map_data_cache';
-const MAX_CACHE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_CACHE_SIZE = 20 * 1024 * 1024; // 20MB
 
 function loadCache() {
     try {
@@ -401,7 +401,7 @@ async function fetchTrees() {
     const zoom = map.getZoom();
     const bounds = map.getBounds();
 
-    if (zoom < 12) {
+    if (zoom < 13) {
         setStatus(t.zoom_too_high, false);
         return;
     }
