@@ -246,6 +246,69 @@ function getSelectedQueries(bbox: string) {
 
 let lastFetchedBounds: L.LatLngBounds | null = null;
 const loadedTreeIds = new Set<string>();
+let cachedFeatures: any[] = [];
+
+const CACHE_KEY = 'tree_map_data_cache';
+const MAX_CACHE_SIZE = 2 * 1024 * 1024; // 2MB
+
+function loadCache() {
+    try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            cachedFeatures = JSON.parse(cached);
+            console.log(`Loaded ${cachedFeatures.length} trees from cache`);
+            applyCache();
+        }
+    } catch (e) {
+        console.error('Failed to load cache:', e);
+        cachedFeatures = [];
+    }
+}
+
+function saveCache() {
+    try {
+        let cacheString = JSON.stringify(cachedFeatures);
+        // If exceeds 2MB, remove oldest 20% until it fits
+        while (cacheString.length > MAX_CACHE_SIZE && cachedFeatures.length > 0) {
+            const toRemove = Math.max(1, Math.floor(cachedFeatures.length * 0.2));
+            cachedFeatures.splice(0, toRemove);
+            cacheString = JSON.stringify(cachedFeatures);
+        }
+        localStorage.setItem(CACHE_KEY, cacheString);
+    } catch (e) {
+        console.error('Failed to save cache:', e);
+    }
+}
+
+function applyCache() {
+    const selectedTypes = Array.from(document.querySelectorAll('.filter-item input:checked')).map((input: any) => input.value);
+    
+    const featuresToShow = cachedFeatures.filter(f => {
+        if (loadedTreeIds.has(f.id)) return false;
+        const typeId = getTreeType(f.properties);
+        return typeId && selectedTypes.includes(typeId);
+    });
+
+    if (featuresToShow.length > 0) {
+        featuresToShow.forEach(f => loadedTreeIds.add(f.id));
+        treeLayer.addData({
+            type: 'FeatureCollection',
+            features: featuresToShow
+        } as any);
+        console.log(`Applied ${featuresToShow.length} trees from cache to map`);
+    }
+}
+
+function updateCache(newFeatures: any[]) {
+    // Add new features, avoiding duplicates in the cache array itself
+    const existingIds = new Set(cachedFeatures.map(f => f.id));
+    const uniqueNewFeatures = newFeatures.filter(f => !existingIds.has(f.id));
+    
+    if (uniqueNewFeatures.length > 0) {
+        cachedFeatures.push(...uniqueNewFeatures);
+        saveCache();
+    }
+}
 
 async function fetchTrees() {
     const zoom = map.getZoom();
@@ -349,6 +412,7 @@ async function fetchTrees() {
                 type: 'FeatureCollection',
                 features: newFeatures
             } as any);
+            updateCache(newFeatures);
         }
 
         lastFetchedBounds = L.latLngBounds([south, west], [north, east]);
@@ -368,6 +432,7 @@ document.querySelectorAll('.filter-item input').forEach(input => {
         treeLayer.clearLayers();
         loadedTreeIds.clear();
         lastFetchedBounds = null;
+        applyCache();
         fetchTrees();
     });
 });
@@ -379,6 +444,7 @@ function debouncedFetch() {
 }
 
 map.on('moveend', debouncedFetch);
+loadCache();
 fetchTrees();
 
 // --- Search Functionality ---
