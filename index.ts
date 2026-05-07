@@ -240,15 +240,16 @@ function getTreeType(props: any): string | undefined {
     const genus = (props['genus'] || '').toLowerCase();
     const species = (props['species'] || '').toLowerCase();
     const name = (props['name'] || '').toLowerCase();
+    const taxon = (props['taxon'] || '').toLowerCase();
     const wiki = (props['species:wikipedia'] || props['wikipedia'] || '').toLowerCase();
-    const wikidata = props['species:wikidata'] || props['wikidata'] || props['genus:wikidata'] || '';
+    const wikidata = props['species:wikidata'] || props['wikidata'] || props['genus:wikidata'] || props['taxon:wikidata'] || '';
     const natural = (props['natural'] || '').toLowerCase();
 
     for (const tree of TREE_TYPES) {
         // Match keywords against genus, species, wikipedia, and name tags
         const keywordMatch = tree.keywords.some(kw => {
             const kwl = kw.toLowerCase();
-            return genus.includes(kwl) || species.includes(kwl) || wiki.includes(kwl) || name.includes(kwl);
+            return genus.includes(kwl) || taxon.includes(kwl) || species.includes(kwl) || wiki.includes(kwl) || name.includes(kwl);
         });
 
         const wikidataMatch = tree.wikidata.includes(wikidata);
