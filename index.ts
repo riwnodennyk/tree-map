@@ -282,7 +282,7 @@ function saveCache() {
 
 function applyCache() {
     const selectedTypes = Array.from(document.querySelectorAll('.filter-item input:checked')).map((input: any) => input.value);
-    
+
     const featuresToShow = cachedFeatures.filter(f => {
         if (loadedTreeIds.has(f.id)) return false;
         const typeId = getTreeType(f.properties);
@@ -300,10 +300,16 @@ function applyCache() {
 }
 
 function updateCache(newFeatures: any[]) {
+    const zoom = map.getZoom();
+    if (zoom < 13) {
+        console.log(`Zoom level ${zoom} too low for caching, skipping storage`);
+        return;
+    }
+
     // Add new features, avoiding duplicates in the cache array itself
     const existingIds = new Set(cachedFeatures.map(f => f.id));
     const uniqueNewFeatures = newFeatures.filter(f => !existingIds.has(f.id));
-    
+
     if (uniqueNewFeatures.length > 0) {
         cachedFeatures.push(...uniqueNewFeatures);
         saveCache();
@@ -314,7 +320,7 @@ async function fetchTrees() {
     const zoom = map.getZoom();
     const bounds = map.getBounds();
 
-    if (zoom < 14) {
+    if (zoom < 11) {
         console.log('Zoom too low, skipping fetch');
         return;
     }
