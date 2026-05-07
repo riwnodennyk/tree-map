@@ -46,8 +46,8 @@ L.control.zoom({ position: 'topright' }).addTo(map);
 
 const treeLayer = L.geoJSON(undefined as any, {
     pointToLayer: (feature, latlng) => {
-        const species = feature.properties['genus'] || feature.properties['species'] || feature.properties['name'] || t.unknown;
-        const color = getTreeColor(feature.properties);
+        const typeId = getTreeType(feature.properties);
+        const color = getTreeColor(typeId);
 
         return L.circleMarker(latlng, {
             radius: 8,
@@ -64,9 +64,11 @@ const treeLayer = L.geoJSON(undefined as any, {
         const height = props['height'] ? `${props['height']}m` : t.unknown;
         const circum = props['circumference'] ? `${props['circumference']}m` : t.unknown;
 
+        const typeId = getTreeType(feature.properties);
+
         const content = `
             <div class="building-info">
-                <h3>${species}</h3>
+                <h3>${typeId}</h3>
                 <p><strong>${t.height}:</strong> ${height}</p>
                 <p><strong>${t.type}:</strong> ${props['natural'] || 'tree'}</p>
                 ${props['denotation'] ? `<p><strong>Denotation:</strong> ${props['denotation']}</p>` : ''}
@@ -74,7 +76,7 @@ const treeLayer = L.geoJSON(undefined as any, {
             </div>
         `;
         layer.bindPopup(content);
-        layer.bindTooltip(species, { sticky: true, className: 'building-tooltip' });
+        layer.bindTooltip(typeId, { sticky: true, className: 'building-tooltip' });
 
         layer.on('mouseover', function (this: any) {
             this.setStyle({
@@ -114,7 +116,7 @@ const TREE_TYPES: TreeDefinition[] = [
     },
     {
         id: 'magnolia',
-        color: '#ec4899',
+        color: '#9d09ab',
         genus: ['Magnolia'],
         wikiKeywords: ['Magnolia'],
         wikidata: ['Q156942'],
@@ -122,7 +124,7 @@ const TREE_TYPES: TreeDefinition[] = [
     },
     {
         id: 'cherry',
-        color: '#f43f5e',
+        color: '#ff6363',
         genus: ['Prunus'],
         wikiKeywords: ['Prunus', 'Cherry', 'Sakura'],
         wikidata: ['Q156214'],
@@ -130,15 +132,15 @@ const TREE_TYPES: TreeDefinition[] = [
     },
     {
         id: 'platan',
-        color: '#eab308',
+        color: '#4287f5',
         genus: ['Platanus'],
         wikiKeywords: ['Platanus', 'Platan'],
-        wikidata: ['Q156202'],
+        wikidata: ['Q156202', 'Q157739'],
         nameKeywords: ['platan', 'платан']
     }
 ];
 
-function getTreeColor(props: any) {
+function getTreeType(props: any): string | undefined {
     const genus = (props['genus'] || '').toLowerCase();
     const species = (props['species'] || '').toLowerCase();
     const name = (props['name'] || '').toLowerCase();
@@ -152,11 +154,17 @@ function getTreeColor(props: any) {
         const nameMatch = tree.nameKeywords.some(kw => name.includes(kw.toLowerCase()) || species.includes(kw.toLowerCase()));
 
         if (genusMatch || wikiMatch || wikidataMatch || nameMatch) {
-            return tree.color;
+            return tree.id;
         }
     }
 
-    return '#475569';
+    return undefined;
+}
+
+function getTreeColor(typeId: string | undefined): string {
+    if (!typeId) return '#475569';
+    const tree = TREE_TYPES.find(t => t.id === typeId);
+    return tree ? tree.color : '#ffffff';
 }
 
 function getSelectedQueries(bbox: string) {
@@ -164,7 +172,7 @@ function getSelectedQueries(bbox: string) {
     document.querySelectorAll('.filter-item input:checked').forEach((input: any) => {
         const typeId = input.value;
         const tree = TREE_TYPES.find(t => t.id === typeId);
-        
+
         if (tree) {
             // Genus filter
             if (tree.genus.length > 0) {
