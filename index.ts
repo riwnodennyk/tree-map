@@ -101,23 +101,22 @@ const treeLayer = L.geoJSON(undefined as any, {
 interface TreeDefinition {
     id: string;
     color: string;
-    genus: string[];
-    wikiKeywords: string[];
+    keywords: string[]; // Combined genus, wikiKeywords, and nameKeywords
     wikidata: string[];
-    nameKeywords: string[]; // Keywords to check in 'name' or 'species' tags
 }
 
 const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'palm',
         color: '#22c55e',
-        genus: [
+        keywords: [
             'Phoenix', 'Washingtonia', 'Trachycarpus', 'Chamaerops', 'Areca', 'Cocos', 'Howea', 'Syagrus',
             'Brahea', 'Livistona', 'Rhapis', 'Sabal', 'Archontophoenix', 'Dypsis', 'Roystonea', 'Bismarckia',
             'Butia', 'Jubaea', 'Chamaedorea', 'Caryota', 'Latania', 'Hyophorbe', 'Wodyetia', 'Rhopalostylis',
-            'Cycas', 'Encephalartos', 'Zamia', 'Dracaena', 'Yucca', 'Cordyline'
+            'Cycas', 'Encephalartos', 'Zamia', 'Dracaena', 'Yucca', 'Cordyline',
+            'Arecaceae', 'Palm', 'Cycad', 'Cycadaceae', 'Arecopsida',
+            'пальма', 'цикас', 'юкка', 'драцена', 'drago', 'кордилина'
         ],
-        wikiKeywords: ['Arecaceae', 'Palm', 'Phoenix', 'Washingtonia', 'Trachycarpus', 'Cycad', 'Cycadaceae', 'Yucca', 'Dracaena', 'Cordyline', 'Arecopsida'],
         wikidata: [
             'Q103447', // Arecaceae (Family)
             'Q156294', // Palm (Concept/Family)
@@ -157,14 +156,12 @@ const TREE_TYPES: TreeDefinition[] = [
             'Q156317', // Yucca
             'Q158498', // Cordyline
             'Q14080'   // Arecaceae (Family)
-        ],
-        nameKeywords: ['palm', 'пальма', 'cycad', 'цикас', 'yucca', 'юкка', 'dracaena', 'драцена', 'drago', 'cordyline', 'кордилина']
+        ]
     },
     {
         id: 'magnolia',
         color: '#9d09ab',
-        genus: ['Magnolia'],
-        wikiKeywords: ['Magnolia'],
+        keywords: ['Magnolia'],
         wikidata: [
             'Q157017', // Magnolia (Genus)
             'Q156942', // Magnolia (Concept)
@@ -173,14 +170,12 @@ const TREE_TYPES: TreeDefinition[] = [
             'Q161121', // Magnolia stellata (Species)
             'Q161115', // Magnolia denudata (Species)
             'Q161113'  // Magnolia kobus (Species)
-        ],
-        nameKeywords: ['magnolia']
+        ]
     },
     {
         id: 'cherry',
         color: '#ff6363',
-        genus: ['Prunus'],
-        wikiKeywords: ['Prunus', 'Cherry', 'Sakura'],
+        keywords: ['Prunus', 'Cherry', 'Sakura', 'вишня', 'сакура'],
         wikidata: [
             'Q190545', // Prunus (Genus)
             'Q156214', // Prunus (Concept)
@@ -191,14 +186,12 @@ const TREE_TYPES: TreeDefinition[] = [
             'Q146951', // Prunus cerasifera (Species)
             'Q165424', // Prunus padus (Species)
             'Q165415'  // Prunus nipponica (Species)
-        ],
-        nameKeywords: ['cherry', 'sakura', 'вишня', 'сакура']
+        ]
     },
     {
         id: 'platan',
         color: '#4287f5',
-        genus: ['Platanus'],
-        wikiKeywords: ['Platanus', 'Platan'],
+        keywords: ['Platanus', 'Platan', 'платан'],
         wikidata: [
             'Q163025', // Platanus (Genus)
             'Q156202', // Platanus (Concept)
@@ -206,8 +199,7 @@ const TREE_TYPES: TreeDefinition[] = [
             'Q157739', // Platanus × acerifolia (Alternative QID for London Plane)
             'Q161376', // Platanus occidentalis (Species)
             'Q161375'  // Platanus orientalis (Species)
-        ],
-        nameKeywords: ['platan', 'платан']
+        ]
     }
 ];
 
@@ -228,23 +220,18 @@ function getTreeType(props: any): string | undefined {
     const natural = (props['natural'] || '').toLowerCase();
 
     for (const tree of TREE_TYPES) {
-        // Genus can be in genus OR species tag
-        const genusMatch = tree.genus.some(g => {
-            const gl = g.toLowerCase();
-            return genus.includes(gl) || species.includes(gl);
+        // Match keywords against genus, species, wikipedia, and name tags
+        const keywordMatch = tree.keywords.some(kw => {
+            const kwl = kw.toLowerCase();
+            return genus.includes(kwl) || species.includes(kwl) || wiki.includes(kwl) || name.includes(kwl);
         });
 
-        const wikiMatch = tree.wikiKeywords.some(kw => wiki.includes(kw.toLowerCase()));
         const wikidataMatch = tree.wikidata.includes(wikidata);
-        const nameMatch = tree.nameKeywords.some(kw => {
-            const kwl = kw.toLowerCase();
-            return name.includes(kwl) || species.includes(kwl);
-        });
 
         // Special case for palms: also check natural tag
-        const naturalMatch = tree.id === 'palm' && (natural === 'palm' || (natural === 'shrub' && (genusMatch || nameMatch)));
+        const naturalMatch = tree.id === 'palm' && (natural === 'palm' || (natural === 'shrub' && keywordMatch));
 
-        if (genusMatch || wikiMatch || wikidataMatch || nameMatch || naturalMatch) {
+        if (keywordMatch || wikidataMatch || naturalMatch) {
             return tree.id;
         }
     }
@@ -268,27 +255,25 @@ function getSelectedQueries(bbox: string) {
             const types = ['node["natural"="tree"]', 'node["natural"="shrub"]', 'node["natural"="palm"]'];
 
             types.forEach(type => {
-                // Genus filter
-                if (tree.genus.length > 0) {
-                    selected.push(`${type}["genus"~"${tree.genus.join('|')}",i](${bbox});`);
-                    selected.push(`${type}["species"~"${tree.genus.join('|')}",i](${bbox});`);
-                }
-                // Wikipedia filter
-                if (tree.wikiKeywords.length > 0) {
-                    selected.push(`${type}["species:wikipedia"~"${tree.wikiKeywords.join('|')}",i](${bbox});`);
-                    selected.push(`${type}["wikipedia"~"${tree.wikiKeywords.join('|')}",i](${bbox});`);
-                }
+
                 // Wikidata filter
                 if (tree.wikidata.length > 0) {
                     const qidRegex = tree.wikidata.join('|');
                     selected.push(`${type}["species:wikidata"~"${qidRegex}"](${bbox});`);
                     selected.push(`${type}["wikidata"~"${qidRegex}"](${bbox});`);
+                    selected.push(`${type}["taxon:wikidata"~"${qidRegex}"](${bbox});`);
                     selected.push(`${type}["genus:wikidata"~"${qidRegex}"](${bbox});`);
                 }
-                // Name/Species keywords filter
-                if (tree.nameKeywords.length > 0) {
-                    selected.push(`${type}["name"~"${tree.nameKeywords.join('|')}",i](${bbox});`);
-                    selected.push(`${type}["species"~"${tree.nameKeywords.join('|')}",i](${bbox});`);
+
+                // Combined keywords filter (checking genus, species, wikipedia, name, and taxon)
+                if (tree.keywords.length > 0) {
+                    const kwRegex = tree.keywords.join('|');
+                    selected.push(`${type}["genus"~"${kwRegex}",i](${bbox});`);
+                    selected.push(`${type}["species"~"${kwRegex}",i](${bbox});`);
+                    selected.push(`${type}["species:wikipedia"~"${kwRegex}",i](${bbox});`);
+                    selected.push(`${type}["wikipedia"~"${kwRegex}",i](${bbox});`);
+                    selected.push(`${type}["name"~"${kwRegex}",i](${bbox});`);
+                    selected.push(`${type}["taxon"~"${kwRegex}",i](${bbox});`);
                 }
             });
         }
