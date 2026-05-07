@@ -401,7 +401,7 @@ async function fetchTrees() {
     const zoom = map.getZoom();
     const bounds = map.getBounds();
 
-    if (zoom < 11) {
+    if (zoom < 12) {
         setStatus(t.zoom_too_high, false);
         return;
     }
@@ -409,20 +409,20 @@ async function fetchTrees() {
     // Check if current bounds are already covered by the last fetch
     if (lastFetchedBounds && lastFetchedBounds.contains(bounds)) {
         console.log('Area already cached, skipping fetch');
-        
+
         // Still check if anything is visible (in case user changed filters or moved within coverage)
         const currentBounds = map.getBounds();
-        let hasVisibleTrees = false;
+        let count = 0;
         treeLayer.eachLayer((layer: any) => {
             if (currentBounds.contains((layer as L.CircleMarker).getLatLng())) {
-                hasVisibleTrees = true;
+                count++;
             }
         });
-        
-        if (!hasVisibleTrees) {
+
+        if (count === 0) {
             setStatus(t.no_trees_found, false);
         } else {
-            setStatus(null);
+            setStatus(t.trees_shown.replace('{count}', count.toString()), false);
         }
         return;
     }
@@ -533,17 +533,17 @@ async function fetchTrees() {
 
         // Check if there are any trees visible on the map after fetch
         const currentBounds = map.getBounds();
-        let hasVisibleTrees = false;
+        let count = 0;
         treeLayer.eachLayer((layer: any) => {
             if (currentBounds.contains((layer as L.CircleMarker).getLatLng())) {
-                hasVisibleTrees = true;
+                count++;
             }
         });
 
-        if (!hasVisibleTrees) {
+        if (count === 0) {
             setStatus(t.no_trees_found, false);
         } else {
-            setStatus(null);
+            setStatus(t.trees_shown.replace('{count}', count.toString()), false);
         }
 
     } catch (error) {
@@ -582,6 +582,44 @@ function debouncedFetch() {
     // Apply cache immediately for instant feedback when moving to already-visited areas
     applyCache();
     updateUrl();
+
+    // Refresh count status immediately from cache/existing layers
+    const currentBounds = map.getBounds();
+    const loading = document.getElementById('loading');
+    const loadingText = loading?.querySelector('span');
+    const zoom = map.getZoom();
+
+    const t_trees_shown = translations[currentLang].trees_shown;
+    const t_no_trees_found = translations[currentLang].no_trees_found;
+    const t_zoom_too_high = translations[currentLang].zoom_too_high;
+
+    if (loading && loadingText) {
+        if (zoom < 11) {
+            loading.style.display = 'flex';
+            loadingText.innerText = t_zoom_too_high;
+            const spinner = loading.querySelector('.loading-spinner') as HTMLElement;
+            if (spinner) spinner.style.display = 'none';
+        } else {
+            let count = 0;
+            treeLayer.eachLayer((layer: any) => {
+                if (currentBounds.contains((layer as L.CircleMarker).getLatLng())) {
+                    count++;
+                }
+            });
+
+            if (count === 0) {
+                loading.style.display = 'flex';
+                loadingText.innerText = t_no_trees_found;
+                const spinner = loading.querySelector('.loading-spinner') as HTMLElement;
+                if (spinner) spinner.style.display = 'none';
+            } else {
+                loading.style.display = 'flex';
+                loadingText.innerText = t_trees_shown.replace('{count}', count.toString());
+                const spinner = loading.querySelector('.loading-spinner') as HTMLElement;
+                if (spinner) spinner.style.display = 'none';
+            }
+        }
+    }
 
     if (fetchTimeout) clearTimeout(fetchTimeout);
     fetchTimeout = setTimeout(fetchTrees, 400);
