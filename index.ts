@@ -73,7 +73,7 @@ L.control.zoom({ position: 'topright' }).addTo(map);
 
 const treeLayer = L.geoJSON(undefined as any, {
     pointToLayer: (feature, latlng) => {
-        const typeId = getTreeType(feature.properties);
+        const typeId = treeFilter(feature.properties);
         const color = getTreeColor(typeId);
 
         return L.circleMarker(latlng, {
@@ -91,7 +91,7 @@ const treeLayer = L.geoJSON(undefined as any, {
         const height = props['height'] ? `${props['height']}m` : t.unknown;
         const circum = props['circumference'] ? `${props['circumference']}m` : t.unknown;
 
-        const typeId = getTreeType(feature.properties);
+        const typeId = treeFilter(feature.properties);
 
         const content = `
             <div class="building-info">
@@ -236,75 +236,71 @@ TREE_TYPES.forEach(tree => {
     }
 });
 
-function getTreeType(props: any): string | undefined {
-    const genus = (props['genus'] || '').toLowerCase();
-    const species = (props['species'] || '').toLowerCase();
-    const name = (props['name'] || '').toLowerCase();
-    const taxon = (props['taxon'] || '').toLowerCase();
-    const wiki = (props['species:wikipedia'] || props['wikipedia'] || '').toLowerCase();
-    const wikidata = props['species:wikidata'] || props['wikidata'] || props['genus:wikidata'] || props['taxon:wikidata'] || '';
-    const natural = (props['natural'] || '').toLowerCase();
+const KEYWORD_TAGS = ['genus', 'species', 'species:wikipedia', 'wikipedia', 'name', 'taxon'];
+const WIKIDATA_TAGS = ['species:wikidata', 'wikidata', 'taxon:wikidata', 'genus:wikidata'];
 
-    for (const tree of TREE_TYPES) {
-        // Match keywords against genus, species, wikipedia, and name tags
-        const keywordMatch = tree.keywords.some(kw => {
-            const kwl = kw.toLowerCase();
-            return genus.includes(kwl) || taxon.includes(kwl) || species.includes(kwl) || wiki.includes(kwl) || name.includes(kwl);
+function treeFilter(input: any, bbox?: string): any {
+    if (bbox) {
+        const tree = input as TreeDefinition;
+        const queries: string[] = [];
+        const baseTypes = ['node["natural"="tree"]', 'node["natural"="shrub"]', 'node["natural"="palm"]'];
+
+        baseTypes.forEach(type => {
+            // If the filter is for palms and the type is natural=palm, add it unconditionally
+            if (tree.id === 'palm' && type.includes('"natural"="palm"')) {
+                queries.push(`${type}(${bbox});`);
+                return;
+            }
+
+            // Wikidata filter
+            if (tree.wikidata.length > 0) {
+                const qidRegex = tree.wikidata.join('|');
+                WIKIDATA_TAGS.forEach(tag => {
+                    queries.push(`${type}["${tag}"~"${qidRegex}"](${bbox});`);
+                });
+            }
+
+            // Keywords filter
+            if (tree.keywords.length > 0) {
+                const kwRegex = tree.keywords.join('|');
+                KEYWORD_TAGS.forEach(tag => {
+                    queries.push(`${type}["${tag}"~"${kwRegex}",i](${bbox});`);
+                });
+            }
         });
+        return queries;
+    } else {
+        const props = input;
+        const natural = (props['natural'] || '').toLowerCase();
+        const wikidataValue = WIKIDATA_TAGS.map(tag => props[tag]).find(v => v) || '';
 
-        const wikidataMatch = tree.wikidata.includes(wikidata);
+        for (const tree of TREE_TYPES) {
+            // Match Wikidata
+            if (tree.wikidata.includes(wikidataValue)) {
+                return tree.id;
+            }
 
-        // Special case for palms: also check natural tag
-        const naturalMatch = tree.id === 'palm' && (natural === 'palm' || (natural === 'shrub' && keywordMatch));
+            // Match Keywords
+            const keywordMatch = tree.keywords.some(kw => {
+                const kwl = kw.toLowerCase();
+                return KEYWORD_TAGS.some(tag => (props[tag] || '').toLowerCase().includes(kwl));
+            });
 
-        if (keywordMatch || wikidataMatch || naturalMatch) {
-            return tree.id;
+            // Special case for palms: also check natural tag
+            const isPalmTag = tree.id === 'palm' && natural === 'palm';
+
+            if (keywordMatch || isPalmTag) {
+                return tree.id;
+            }
         }
+        return undefined;
     }
-
-    return undefined;
 }
 
 function getTreeColor(typeId: string | undefined): string {
     if (!typeId) return '#ffffff';
     const tree = TREE_TYPES.find(t => t.id === typeId);
     return tree ? tree.color : '#ffffff';
-}
-
-function getSelectedQueries(bbox: string) {
-    const selected: string[] = [];
-    document.querySelectorAll('.filter-item input:checked').forEach((input: any) => {
-        const typeId = input.value;
-        const tree = TREE_TYPES.find(t => t.id === typeId);
-
-        if (tree) {
-            const types = ['node["natural"="tree"]', 'node["natural"="shrub"]', 'node["natural"="palm"]'];
-
-            types.forEach(type => {
-
-                // Wikidata filter
-                if (tree.wikidata.length > 0) {
-                    const qidRegex = tree.wikidata.join('|');
-                    selected.push(`${type}["species:wikidata"~"${qidRegex}"](${bbox});`);
-                    selected.push(`${type}["wikidata"~"${qidRegex}"](${bbox});`);
-                    selected.push(`${type}["taxon:wikidata"~"${qidRegex}"](${bbox});`);
-                    selected.push(`${type}["genus:wikidata"~"${qidRegex}"](${bbox});`);
-                }
-
-                // Combined keywords filter (checking genus, species, wikipedia, name, and taxon)
-                if (tree.keywords.length > 0) {
-                    const kwRegex = tree.keywords.join('|');
-                    selected.push(`${type}["genus"~"${kwRegex}",i](${bbox});`);
-                    selected.push(`${type}["species"~"${kwRegex}",i](${bbox});`);
-                    selected.push(`${type}["species:wikipedia"~"${kwRegex}",i](${bbox});`);
-                    selected.push(`${type}["wikipedia"~"${kwRegex}",i](${bbox});`);
-                    selected.push(`${type}["name"~"${kwRegex}",i](${bbox});`);
-                    selected.push(`${type}["taxon"~"${kwRegex}",i](${bbox});`);
-                }
-            });
-        }
-    });
-    return selected;
 }
 
 let lastFetchedBounds: L.LatLngBounds | null = null;
@@ -348,7 +344,7 @@ function applyCache() {
 
     const featuresToShow = cachedFeatures.filter(f => {
         if (loadedTreeIds.has(f.id)) return false;
-        const typeId = getTreeType(f.properties);
+        const typeId = treeFilter(f.properties);
         return typeId && selectedTypes.includes(typeId);
     });
 
@@ -412,7 +408,14 @@ async function fetchTrees() {
     const east = bounds.getEast() + lngPadding;
 
     const paddedBbox = `${south},${west},${north},${east}`;
-    const selectedQueries = getSelectedQueries(paddedBbox);
+
+    const selectedQueries: string[] = [];
+    document.querySelectorAll('.filter-item input:checked').forEach((input: any) => {
+        const tree = TREE_TYPES.find(t => t.id === input.value);
+        if (tree) {
+            selectedQueries.push(...treeFilter(tree, paddedBbox));
+        }
+    });
 
     if (selectedQueries.length === 0) {
         treeLayer.clearLayers();
@@ -485,7 +488,7 @@ async function fetchTrees() {
             const id = f.id;
             if (loadedTreeIds.has(id)) return false;
 
-            const typeId = getTreeType(f.properties);
+            const typeId = treeFilter(f.properties);
             return typeId && selectedTypes.includes(typeId);
         });
 
