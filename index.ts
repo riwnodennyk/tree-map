@@ -316,7 +316,15 @@ function updateCache(newFeatures: any[]) {
     }
 }
 
+let currentFetchController: AbortController | null = null;
+
 async function fetchTrees() {
+    if (currentFetchController) {
+        currentFetchController.abort();
+    }
+    currentFetchController = new AbortController();
+    const signal = currentFetchController.signal;
+
     const zoom = map.getZoom();
     const bounds = map.getBounds();
 
@@ -381,7 +389,7 @@ async function fetchTrees() {
             const response = await fetch(instance, {
                 method: 'POST',
                 body: query,
-                signal: controller.signal
+                signal: signal
             });
             if (response.ok) {
                 const data = await response.json();
@@ -405,15 +413,21 @@ async function fetchTrees() {
 
         const geojson = osmtogeojson(result.data);
 
-        // Filter to only add new trees we haven't seen before
+        if (signal.aborted) return;
+
+        // Filter to only add new trees we haven't seen before AND verify they match current filters
+        const selectedTypes = Array.from(document.querySelectorAll('.filter-item input:checked')).map((input: any) => input.value);
+        
         const newFeatures = (geojson as any).features.filter((f: any) => {
             const id = f.id;
             if (loadedTreeIds.has(id)) return false;
-            loadedTreeIds.add(id);
-            return true;
+            
+            const typeId = getTreeType(f.properties);
+            return typeId && selectedTypes.includes(typeId);
         });
 
         if (newFeatures.length > 0) {
+            newFeatures.forEach((f: any) => loadedTreeIds.add(f.id));
             treeLayer.addData({
                 type: 'FeatureCollection',
                 features: newFeatures
@@ -435,6 +449,7 @@ async function fetchTrees() {
 // Re-fetch when filters change
 document.querySelectorAll('.filter-item input').forEach(input => {
     input.addEventListener('change', () => {
+        if (currentFetchController) currentFetchController.abort();
         treeLayer.clearLayers();
         loadedTreeIds.clear();
         lastFetchedBounds = null;
@@ -445,8 +460,11 @@ document.querySelectorAll('.filter-item input').forEach(input => {
 
 let fetchTimeout: any = null;
 function debouncedFetch() {
+    // Apply cache immediately for instant feedback when moving to already-visited areas
+    applyCache();
+    
     if (fetchTimeout) clearTimeout(fetchTimeout);
-    fetchTimeout = setTimeout(fetchTrees, 500);
+    fetchTimeout = setTimeout(fetchTrees, 400);
 }
 
 map.on('moveend', debouncedFetch);
