@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Age Map</title>
+    <meta name="description" content="Interactive building age map.">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+            background: #0f172a;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #38bdf8;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 200px;
+        }
+
+        .legend h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #38bdf8;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* Custom Leaflet Popups */
+        .leaflet-popup-content-wrapper {
+            background: #1e293b;
+            color: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .leaflet-popup-tip {
+            background: #1e293b;
+        }
+
+        .building-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #38bdf8;
+        }
+
+        .building-info p {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        /* Custom Leaflet Tooltips */
+        .building-tooltip {
+            background: rgba(15, 23, 42, 0.9) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.4) !important;
+            border-radius: 8px !important;
+            color: #f8fafc !important;
+            padding: 4px 8px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .leaflet-tooltip-top:before {
+            border-top-color: rgba(15, 23, 42, 0.9) !important;
+        }
+
+        /* Search Box Styles */
+        .search-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-input-wrapper:focus-within {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15), 0 10px 25px rgba(0, 0, 0, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .search-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #f8fafc;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .search-results {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+        }
+
+        .search-result-name {
+            font-weight: 600;
+        }
+
+        .search-result-address {
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        /* Scrollbar styling for search results */
+        .search-results::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Filter Styles */
+        .filter-container {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 12px 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .filter-container h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: opacity 0.2s;
+            user-select: none;
+        }
+
+        .filter-item:hover {
+            opacity: 0.8;
+        }
+
+        .filter-item input {
+            display: none;
+        }
+
+        .custom-checkbox {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .filter-item input:checked + .custom-checkbox {
+            border-color: transparent;
+        }
+
+        .filter-item input:checked + .custom-checkbox::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            background: #fff;
+        }
+
+        .custom-checkbox.palm { background-color: #22c55e; }
+        .custom-checkbox.magnolia { background-color: #ec4899; }
+        .custom-checkbox.cherry { background-color: #f43f5e; }
+        .custom-checkbox.platan { background-color: #eab308; }
+
+        .filter-item input:not(:checked) + .custom-checkbox {
+            background-color: transparent !important;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="search-container">
+        <div class="search-input-wrapper">
+            <input type="text" class="search-input" id="search-input" placeholder="..." autocomplete="off">
+        </div>
+        <div class="search-results" id="search-results"></div>
+        <div class="filter-container">
+            <h4 id="filter-title">...</h4>
+            <div class="filter-options">
+                <label class="filter-item">
+                    <input type="checkbox" value="palm" checked>
+                    <span class="custom-checkbox palm"></span>
+                    <span id="label-palm">...</span>
+                </label>
+                <label class="filter-item">
+                    <input type="checkbox" value="magnolia" checked>
+                    <span class="custom-checkbox magnolia"></span>
+                    <span id="label-magnolia">...</span>
+                </label>
+                <label class="filter-item">
+                    <input type="checkbox" value="cherry" checked>
+                    <span class="custom-checkbox cherry"></span>
+                    <span id="label-cherry">...</span>
+                </label>
+                <label class="filter-item">
+                    <input type="checkbox" value="platan" checked>
+                    <span class="custom-checkbox platan"></span>
+                    <span id="label-platan">...</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <span>...</span>
+    </div>
+    <div class="legend" style="display: none;">
+        <h4>...</h4>
+        <div id="legend-items"></div>
+    </div>
+    <script type="module" src="/index.ts"></script>
+</body>
+
+</html>
