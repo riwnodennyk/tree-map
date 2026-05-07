@@ -94,32 +94,92 @@ const treeLayer = L.geoJSON(undefined as any, {
     }
 }).addTo(map);
 
+interface TreeDefinition {
+    id: string;
+    color: string;
+    genus: string[];
+    wikiKeywords: string[];
+    wikidata: string[];
+    nameKeywords: string[]; // Keywords to check in 'name' or 'species' tags
+}
+
+const TREE_TYPES: TreeDefinition[] = [
+    {
+        id: 'palm',
+        color: '#22c55e',
+        genus: ['Phoenix', 'Washingtonia', 'Trachycarpus', 'Chamaerops', 'Areca', 'Cocos', 'Howea', 'Syagrus'],
+        wikiKeywords: ['Arecaceae', 'Palm', 'Phoenix', 'Washingtonia', 'Trachycarpus'],
+        wikidata: ['Q156294'],
+        nameKeywords: ['palm']
+    },
+    {
+        id: 'magnolia',
+        color: '#ec4899',
+        genus: ['Magnolia'],
+        wikiKeywords: ['Magnolia'],
+        wikidata: ['Q156942'],
+        nameKeywords: ['magnolia']
+    },
+    {
+        id: 'cherry',
+        color: '#f43f5e',
+        genus: ['Prunus'],
+        wikiKeywords: ['Prunus', 'Cherry', 'Sakura'],
+        wikidata: ['Q156214'],
+        nameKeywords: ['cherry', 'sakura', 'вишня', 'сакура']
+    },
+    {
+        id: 'platan',
+        color: '#eab308',
+        genus: ['Platanus'],
+        wikiKeywords: ['Platanus', 'Platan'],
+        wikidata: ['Q156202'],
+        nameKeywords: ['platan', 'платан']
+    }
+];
+
 function getTreeColor(props: any) {
     const genus = (props['genus'] || '').toLowerCase();
     const species = (props['species'] || '').toLowerCase();
     const name = (props['name'] || '').toLowerCase();
+    const wiki = (props['species:wikipedia'] || props['wikipedia'] || '').toLowerCase();
+    const wikidata = props['species:wikidata'] || props['wikidata'] || '';
 
-    if (genus.includes('phoenix') || genus.includes('washingtonia') || genus.includes('trachycarpus') || name.includes('palm') || species.includes('palm')) return '#22c55e';
-    if (genus.includes('magnolia')) return '#ec4899';
-    if (genus.includes('prunus') || name.includes('cherry') || name.includes('sakura') || name.includes('вишня') || name.includes('сакура')) return '#f43f5e';
-    if (genus.includes('platanus') || name.includes('platan') || name.includes('платан')) return '#eab308';
+    for (const tree of TREE_TYPES) {
+        const genusMatch = tree.genus.some(g => genus.includes(g.toLowerCase()));
+        const wikiMatch = tree.wikiKeywords.some(kw => wiki.includes(kw.toLowerCase()));
+        const wikidataMatch = tree.wikidata.includes(wikidata);
+        const nameMatch = tree.nameKeywords.some(kw => name.includes(kw.toLowerCase()) || species.includes(kw.toLowerCase()));
+
+        if (genusMatch || wikiMatch || wikidataMatch || nameMatch) {
+            return tree.color;
+        }
+    }
 
     return '#475569';
 }
 
-const treeFilters = {
-    palm: 'node["natural"="tree"]["genus"~"Phoenix|Washingtonia|Trachycarpus|Chamaerops|Areca|Cocos|Howea|Syagrus",i]',
-    magnolia: 'node["natural"="tree"]["genus"~"Magnolia",i]',
-    cherry: 'node["natural"="tree"]["genus"~"Prunus",i]',
-    platan: 'node["natural"="tree"]["genus"~"Platanus",i]'
-};
-
 function getSelectedQueries(bbox: string) {
     const selected: string[] = [];
     document.querySelectorAll('.filter-item input:checked').forEach((input: any) => {
-        const type = input.value as keyof typeof treeFilters;
-        if (treeFilters[type]) {
-            selected.push(`${treeFilters[type]}(${bbox});`);
+        const typeId = input.value;
+        const tree = TREE_TYPES.find(t => t.id === typeId);
+        
+        if (tree) {
+            // Genus filter
+            if (tree.genus.length > 0) {
+                selected.push(`node["natural"="tree"]["genus"~"${tree.genus.join('|')}",i](${bbox});`);
+            }
+            // Wikipedia filter
+            if (tree.wikiKeywords.length > 0) {
+                selected.push(`node["natural"="tree"]["species:wikipedia"~"${tree.wikiKeywords.join('|')}",i](${bbox});`);
+            }
+            // Wikidata filter
+            if (tree.wikidata.length > 0) {
+                tree.wikidata.forEach(id => {
+                    selected.push(`node["natural"="tree"]["species:wikidata"="${id}"](${bbox});`);
+                });
+            }
         }
     });
     return selected;
