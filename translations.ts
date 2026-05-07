@@ -17,6 +17,8 @@ export interface Translation {
     cherry: string;
     platan: string;
     filter_trees: string;
+    zoom_too_high: string;
+    no_trees_found: string;
 }
 
 export const translations: Record<string, Translation> = {
@@ -38,7 +40,9 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolia",
         cherry: "Cherry & Sakura",
         platan: "Platanus",
-        filter_trees: "Filter Trees"
+        filter_trees: "Filter Trees",
+        zoom_too_high: "Zoom in to see trees",
+        no_trees_found: "No trees found in this area"
     },
     uk: {
         title: "Карта видів дерев",
@@ -58,7 +62,9 @@ export const translations: Record<string, Translation> = {
         magnolia: "Магнолія",
         cherry: "Вишня та Сакура",
         platan: "Платан",
-        filter_trees: "Фільтр дерев"
+        filter_trees: "Фільтр дерев",
+        zoom_too_high: "Наблизьте карту, щоб побачити дерева",
+        no_trees_found: "Дерев не знайдено в цій області"
     },
     de: {
         title: "Baumarten-Karte",
@@ -78,7 +84,9 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolie",
         cherry: "Kirsche & Sakura",
         platan: "Platane",
-        filter_trees: "Bäume filtern"
+        filter_trees: "Bäume filtern",
+        zoom_too_high: "Hineinzoomen, um Bäume zu sehen",
+        no_trees_found: "In diesem Bereich wurden keine Bäume gefunden"
     },
     fr: {
         title: "Carte des espèces d'arbres",
@@ -98,7 +106,9 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolia",
         cherry: "Cerisier & Sakura",
         platan: "Platane",
-        filter_trees: "Filtrer les arbres"
+        filter_trees: "Filtrer les arbres",
+        zoom_too_high: "Zoomez pour voir les arbres",
+        no_trees_found: "Aucun arbre trouvé dans cette zone"
     },
     es: {
         title: "Mapa de especies de árboles",
@@ -118,6 +128,8 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolia",
         cherry: "Cerezo y Sakura",
         platan: "Plátano",
-        filter_trees: "Filtrar árboles"
+        filter_trees: "Filtrar árboles",
+        zoom_too_high: "Acerca el mapa para ver los árboles",
+        no_trees_found: "No se encontraron árboles en esta área"
     }
 };

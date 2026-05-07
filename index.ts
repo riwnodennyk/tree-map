@@ -383,18 +383,47 @@ async function fetchTrees() {
     }
     currentFetchController = new AbortController();
     const signal = currentFetchController.signal;
+    const loading = document.getElementById('loading');
+    const loadingText = loading?.querySelector('span');
+    const spinner = loading?.querySelector('.loading-spinner') as HTMLElement;
+
+    const setStatus = (msg: string | null, showSpinner: boolean = true) => {
+        if (!loading || !loadingText) return;
+        if (msg) {
+            loading.style.display = 'flex';
+            loadingText.innerText = msg;
+            if (spinner) spinner.style.display = showSpinner ? 'block' : 'none';
+        } else {
+            loading.style.display = 'none';
+        }
+    };
 
     const zoom = map.getZoom();
     const bounds = map.getBounds();
 
     if (zoom < 11) {
-        console.log('Zoom too low, skipping fetch');
+        setStatus(t.zoom_too_high, false);
         return;
     }
 
     // Check if current bounds are already covered by the last fetch
     if (lastFetchedBounds && lastFetchedBounds.contains(bounds)) {
         console.log('Area already cached, skipping fetch');
+        
+        // Still check if anything is visible (in case user changed filters or moved within coverage)
+        const currentBounds = map.getBounds();
+        let hasVisibleTrees = false;
+        treeLayer.eachLayer((layer: any) => {
+            if (currentBounds.contains((layer as L.CircleMarker).getLatLng())) {
+                hasVisibleTrees = true;
+            }
+        });
+        
+        if (!hasVisibleTrees) {
+            setStatus(t.no_trees_found, false);
+        } else {
+            setStatus(null);
+        }
         return;
     }
 
@@ -420,6 +449,7 @@ async function fetchTrees() {
     if (selectedQueries.length === 0) {
         treeLayer.clearLayers();
         loadedTreeIds.clear();
+        setStatus(null);
         return;
     }
 
@@ -433,10 +463,7 @@ async function fetchTrees() {
         out skel qt;
     `;
 
-    const loading = document.getElementById('loading');
-    const loadingText = loading?.querySelector('span');
-    if (loading) loading.style.display = 'flex';
-    if (loadingText) loadingText.innerText = t.searching_server;
+    setStatus(t.searching_server);
 
     const OVERPASS_INSTANCES = [
         'https://overpass.kumi.systems/api/interpreter',
@@ -475,7 +502,7 @@ async function fetchTrees() {
         const result = await Promise.any(fetchPromises);
         console.log(`Success from ${result.hostname}. Elements:`, result.data.elements?.length);
 
-        if (loadingText) loadingText.innerText = t.processing;
+        setStatus(t.processing);
 
         const geojson = osmtogeojson(result.data);
 
@@ -503,12 +530,28 @@ async function fetchTrees() {
 
         lastFetchedBounds = L.latLngBounds([south, west], [north, east]);
         controller.abort();
+
+        // Check if there are any trees visible on the map after fetch
+        const currentBounds = map.getBounds();
+        let hasVisibleTrees = false;
+        treeLayer.eachLayer((layer: any) => {
+            if (currentBounds.contains((layer as L.CircleMarker).getLatLng())) {
+                hasVisibleTrees = true;
+            }
+        });
+
+        if (!hasVisibleTrees) {
+            setStatus(t.no_trees_found, false);
+        } else {
+            setStatus(null);
+        }
+
     } catch (error) {
+        if (signal.aborted) return;
         console.error('All mirrors failed:', error);
-        if (loadingText) loadingText.innerText = t.servers_overloaded;
+        setStatus(t.servers_overloaded, false);
     } finally {
         clearTimeout(timeoutId);
-        if (loading) loading.style.display = 'none';
     }
 }
 
