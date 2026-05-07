@@ -111,7 +111,23 @@ const TREE_TYPES: TreeDefinition[] = [
         color: '#22c55e',
         genus: ['Phoenix', 'Washingtonia', 'Trachycarpus', 'Chamaerops', 'Areca', 'Cocos', 'Howea', 'Syagrus'],
         wikiKeywords: ['Arecaceae', 'Palm', 'Phoenix', 'Washingtonia', 'Trachycarpus'],
-        wikidata: ['Q156294'],
+        wikidata: [
+            'Q103447', // Arecaceae (Family)
+            'Q156294', // Palm (Concept/Family)
+            'Q156574', // Phoenix (Genus)
+            'Q156934', // Washingtonia (Genus)
+            'Q156948', // Trachycarpus (Genus)
+            'Q156946', // Chamaerops (Genus)
+            'Q156938', // Butia (Genus)
+            'Q156939', // Jubaea (Genus)
+            'Q156928', // Syagrus (Genus)
+            'Q156926', // Areca (Genus)
+            'Q131346', // Cocos nucifera (Species)
+            'Q165313', // Phoenix dactylifera (Species)
+            'Q27661',  // Phoenix canariensis (Species)
+            'Q161688', // Washingtonia robusta (Species)
+            'Q159152'  // Washingtonia filifera (Species)
+        ],
         nameKeywords: ['palm']
     },
     {
@@ -119,7 +135,15 @@ const TREE_TYPES: TreeDefinition[] = [
         color: '#9d09ab',
         genus: ['Magnolia'],
         wikiKeywords: ['Magnolia'],
-        wikidata: ['Q156942'],
+        wikidata: [
+            'Q157017', // Magnolia (Genus)
+            'Q156942', // Magnolia (Concept)
+            'Q161116', // Magnolia grandiflora (Species)
+            'Q161114', // Magnolia × soulangeana (Species)
+            'Q161121', // Magnolia stellata (Species)
+            'Q161115', // Magnolia denudata (Species)
+            'Q161113'  // Magnolia kobus (Species)
+        ],
         nameKeywords: ['magnolia']
     },
     {
@@ -127,7 +151,17 @@ const TREE_TYPES: TreeDefinition[] = [
         color: '#ff6363',
         genus: ['Prunus'],
         wikiKeywords: ['Prunus', 'Cherry', 'Sakura'],
-        wikidata: ['Q156214'],
+        wikidata: [
+            'Q190545', // Prunus (Genus)
+            'Q156214', // Prunus (Concept)
+            'Q161352', // Prunus serrulata (Species)
+            'Q157672', // Prunus × yedoensis (Species)
+            'Q161357', // Prunus subhirtella (Species)
+            'Q165137', // Prunus avium (Species)
+            'Q146951', // Prunus cerasifera (Species)
+            'Q165424', // Prunus padus (Species)
+            'Q165415'  // Prunus nipponica (Species)
+        ],
         nameKeywords: ['cherry', 'sakura', 'вишня', 'сакура']
     },
     {
@@ -135,7 +169,14 @@ const TREE_TYPES: TreeDefinition[] = [
         color: '#4287f5',
         genus: ['Platanus'],
         wikiKeywords: ['Platanus', 'Platan'],
-        wikidata: ['Q156202', 'Q157739'],
+        wikidata: [
+            'Q163025', // Platanus (Genus)
+            'Q156202', // Platanus (Concept)
+            'Q161374', // Platanus × hispanica (Species)
+            'Q157739', // Platanus × acerifolia (Alternative QID for London Plane)
+            'Q161376', // Platanus occidentalis (Species)
+            'Q161375'  // Platanus orientalis (Species)
+        ],
         nameKeywords: ['platan', 'платан']
     }
 ];
@@ -145,7 +186,7 @@ function getTreeType(props: any): string | undefined {
     const species = (props['species'] || '').toLowerCase();
     const name = (props['name'] || '').toLowerCase();
     const wiki = (props['species:wikipedia'] || props['wikipedia'] || '').toLowerCase();
-    const wikidata = props['species:wikidata'] || props['wikidata'] || '';
+    const wikidata = props['species:wikidata'] || props['wikidata'] || props['genus:wikidata'] || '';
 
     for (const tree of TREE_TYPES) {
         const genusMatch = tree.genus.some(g => genus.includes(g.toLowerCase()));
