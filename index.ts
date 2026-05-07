@@ -31,6 +31,8 @@ document.getElementById('label-magnolia')!.innerText = t.magnolia;
 document.getElementById('label-cherry')!.innerText = t.cherry;
 document.getElementById('label-platan')!.innerText = t.platan;
 
+
+
 const map = L.map('map', {
     zoomControl: false
 }).setView([50.4501, 30.5234], 16); // Centered on Kyiv
@@ -181,6 +183,14 @@ const TREE_TYPES: TreeDefinition[] = [
     }
 ];
 
+// Apply colors from code to UI
+TREE_TYPES.forEach(tree => {
+    const checkbox = document.querySelector(`.custom-checkbox.${tree.id}`) as HTMLElement;
+    if (checkbox) {
+        checkbox.style.backgroundColor = tree.color;
+    }
+});
+
 function getTreeType(props: any): string | undefined {
     const genus = (props['genus'] || '').toLowerCase();
     const species = (props['species'] || '').toLowerCase();
@@ -203,7 +213,7 @@ function getTreeType(props: any): string | undefined {
 }
 
 function getTreeColor(typeId: string | undefined): string {
-    if (!typeId) return '#475569';
+    if (!typeId) return '#ffffff';
     const tree = TREE_TYPES.find(t => t.id === typeId);
     return tree ? tree.color : '#ffffff';
 }
