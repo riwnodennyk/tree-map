@@ -33,9 +33,34 @@ document.getElementById('label-platan')!.innerText = t.platan;
 
 
 
+const urlParams = new URLSearchParams(window.location.search);
+const latParam = urlParams.get('lat');
+const lngParam = urlParams.get('lng') || urlParams.get('lon');
+const zoomParam = urlParams.get('z') || urlParams.get('zoom');
+
+let initialLat = 50.4501;
+let initialLng = 30.5234;
+let initialZoom = 16;
+
+if (latParam && lngParam) {
+    const lat = parseFloat(latParam);
+    const lng = parseFloat(lngParam);
+    if (!isNaN(lat) && !isNaN(lng)) {
+        initialLat = lat;
+        initialLng = lng;
+    }
+}
+
+if (zoomParam) {
+    const zoom = parseInt(zoomParam);
+    if (!isNaN(zoom)) {
+        initialZoom = zoom;
+    }
+}
+
 const map = L.map('map', {
     zoomControl: false
-}).setView([50.4501, 30.5234], 16); // Centered on Kyiv
+}).setView([initialLat, initialLng], initialZoom);
 
 // Add Dark Matter tiles for premium look
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -496,9 +521,20 @@ document.querySelectorAll('.filter-item input').forEach(input => {
 });
 
 let fetchTimeout: any = null;
+function updateUrl() {
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    const url = new URL(window.location.href);
+    url.searchParams.set('lat', center.lat.toFixed(5));
+    url.searchParams.set('lng', center.lng.toFixed(5));
+    url.searchParams.set('z', zoom.toString());
+    window.history.replaceState({}, '', url.toString());
+}
+
 function debouncedFetch() {
     // Apply cache immediately for instant feedback when moving to already-visited areas
     applyCache();
+    updateUrl();
 
     if (fetchTimeout) clearTimeout(fetchTimeout);
     fetchTimeout = setTimeout(fetchTrees, 400);
