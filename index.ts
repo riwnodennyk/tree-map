@@ -91,10 +91,11 @@ const treeLayer = L.geoJSON(undefined as any, {
         const height = props['height'] ? `${props['height']}m` : t.unknown;
 
         const typeId = treeFilter(feature.properties);
+        const typeName = typeId ? (t[typeId as keyof Translation] || typeId) : t.unknown;
 
         const content = `
             <div class="building-info">
-                <h3>${typeId}</h3>
+                <h3>${typeName}</h3>
                 <p><strong>${t.height}:</strong> ${height}</p>
                 <p><strong>${t.type}:</strong> ${props['natural'] || 'tree'}</p>
                 ${props['denotation'] ? `<p><strong>Denotation:</strong> ${props['denotation']}</p>` : ''}
@@ -102,7 +103,7 @@ const treeLayer = L.geoJSON(undefined as any, {
             </div>
         `;
         layer.bindPopup(content);
-        layer.bindTooltip(typeId, { sticky: true, className: 'building-tooltip' });
+        layer.bindTooltip(typeName, { sticky: true, className: 'building-tooltip' });
 
         layer.on('mouseover', function (this: any) {
             this.setStyle({
