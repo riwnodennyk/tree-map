@@ -252,7 +252,13 @@ function treeFilter(input: any, bbox?: string): any {
     if (bbox) {
         const tree = input as TreeDefinition;
         const queries: string[] = [];
-        const baseTypes = ['node["natural"="tree"]', 'node["natural"="shrub"]', 'node["natural"="palm"]'];
+        const baseTypes = [
+            'node["natural"="tree"]',
+            'node["natural"="shrub"]',
+            'node["natural"="palm"]',
+            'way["natural"="tree_row"]',
+            'relation["natural"="tree_row"]'
+        ];
 
         baseTypes.forEach(type => {
             // If the filter is for palms and the type is natural=palm, add it unconditionally
@@ -319,11 +325,30 @@ let cachedFeatures: any[] = [];
 const CACHE_KEY = 'tree_map_data_cache';
 const MAX_CACHE_SIZE = 20 * 1024 * 1024; // 20MB
 
+function transformFeatures(features: any[]): any[] {
+    return features.map((f: any) => {
+        if (f.geometry.type.includes('LineString')) {
+            const coords = f.geometry.type === 'LineString' ? f.geometry.coordinates : f.geometry.coordinates.flat(1);
+            if (coords.length === 0) return f;
+            const avgLng = coords.reduce((sum: number, c: any) => sum + (c[0] || 0), 0) / coords.length;
+            const avgLat = coords.reduce((sum: number, c: any) => sum + (c[1] || 0), 0) / coords.length;
+            return {
+                ...f,
+                geometry: {
+                    type: 'Point',
+                    coordinates: [avgLng, avgLat]
+                }
+            };
+        }
+        return f;
+    });
+}
+
 function loadCache() {
     try {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
-            cachedFeatures = JSON.parse(cached);
+            cachedFeatures = transformFeatures(JSON.parse(cached));
             console.log(`Loaded ${cachedFeatures.length} trees from cache`);
             applyCache();
         }
@@ -517,10 +542,12 @@ async function fetchTrees() {
 
         if (signal.aborted) return;
 
+        const transformedFeatures = transformFeatures((geojson as any).features);
+
         // Filter to only add new trees we haven't seen before AND verify they match current filters
         const selectedTypes = Array.from(document.querySelectorAll('.filter-item input:checked')).map((input: any) => input.value);
 
-        const newFeatures = (geojson as any).features.filter((f: any) => {
+        const newFeatures = transformedFeatures.filter((f: any) => {
             const id = f.id;
             if (loadedTreeIds.has(id)) return false;
 
