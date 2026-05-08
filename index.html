@@ -273,11 +273,11 @@
             position: relative;
         }
 
-        .filter-item input:checked + .custom-checkbox {
+        .filter-item input:checked+.custom-checkbox {
             border-color: transparent;
         }
 
-        .filter-item input:checked + .custom-checkbox::after {
+        .filter-item input:checked+.custom-checkbox::after {
             content: '';
             position: absolute;
             top: 50%;
@@ -291,7 +291,7 @@
 
 
 
-        .filter-item input:not(:checked) + .custom-checkbox {
+        .filter-item input:not(:checked)+.custom-checkbox {
             background-color: transparent !important;
         }
     </style>
@@ -327,6 +327,11 @@
                     <input type="checkbox" value="platan" checked>
                     <span class="custom-checkbox platan"></span>
                     <span id="label-platan">...</span>
+                </label>
+                <label class="filter-item">
+                    <input type="checkbox" value="syringa" checked>
+                    <span class="custom-checkbox syringa"></span>
+                    <span id="label-syringa">...</span>
                 </label>
             </div>
         </div>

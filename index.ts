@@ -30,6 +30,7 @@ document.getElementById('label-palm')!.innerText = t.palm;
 document.getElementById('label-magnolia')!.innerText = t.magnolia;
 document.getElementById('label-cherry')!.innerText = t.cherry;
 document.getElementById('label-platan')!.innerText = t.platan;
+document.getElementById('label-syringa')!.innerText = t.syringa;
 
 
 
@@ -87,9 +88,7 @@ const treeLayer = L.geoJSON(undefined as any, {
     },
     onEachFeature: (feature, layer) => {
         const props = feature.properties;
-        const species = props['genus'] || props['species'] || props['species:en'] || props['name'] || t.unknown;
         const height = props['height'] ? `${props['height']}m` : t.unknown;
-        const circum = props['circumference'] ? `${props['circumference']}m` : t.unknown;
 
         const typeId = treeFilter(feature.properties);
 
@@ -224,6 +223,16 @@ const TREE_TYPES: TreeDefinition[] = [
             'Q157739', // Platanus × acerifolia (Alternative QID for London Plane)
             'Q161376', // Platanus occidentalis (Species)
             'Q161375'  // Platanus orientalis (Species)
+        ]
+    },
+    {
+        id: 'syringa',
+        color: '#a855f7',
+        keywords: ['Syringa', 'Lilac', 'бузок', 'сирень', 'Lilas', 'Flieder', 'Lila'],
+        wikidata: [
+            'Q157011', // Syringa (Genus)
+            'Q156212',  // Syringa vulgaris (Common Lilac)
+            'Q157449'
         ]
     }
 ];

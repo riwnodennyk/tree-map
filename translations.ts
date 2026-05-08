@@ -16,6 +16,7 @@ export interface Translation {
     magnolia: string;
     cherry: string;
     platan: string;
+    syringa: string;
     filter_trees: string;
     zoom_too_high: string;
     no_trees_found: string;
@@ -41,6 +42,7 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolia",
         cherry: "Cherry & Sakura",
         platan: "Platanus",
+        syringa: "Lilac",
         filter_trees: "Filter Trees",
         zoom_too_high: "Zoom in to see trees",
         no_trees_found: "No trees found in this area",
@@ -64,6 +66,7 @@ export const translations: Record<string, Translation> = {
         magnolia: "Магнолія",
         cherry: "Вишня та Сакура",
         platan: "Платан",
+        syringa: "Бузок",
         filter_trees: "Фільтр дерев",
         zoom_too_high: "Наблизьте карту, щоб побачити дерева",
         no_trees_found: "Дерев не знайдено в цій області",
@@ -87,6 +90,7 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolie",
         cherry: "Kirsche & Sakura",
         platan: "Platane",
+        syringa: "Flieder",
         filter_trees: "Bäume filtern",
         zoom_too_high: "Hineinzoomen, um Bäume zu sehen",
         no_trees_found: "In diesem Bereich wurden keine Bäume gefunden",
@@ -110,6 +114,7 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolia",
         cherry: "Cerisier & Sakura",
         platan: "Platane",
+        syringa: "Lilas",
         filter_trees: "Filtrer les arbres",
         zoom_too_high: "Zoomez pour voir les arbres",
         no_trees_found: "Aucun arbre trouvé dans cette zone",
@@ -133,6 +138,7 @@ export const translations: Record<string, Translation> = {
         magnolia: "Magnolia",
         cherry: "Cerezo y Sakura",
         platan: "Plátano",
+        syringa: "Lila",
         filter_trees: "Filtrar árboles",
         zoom_too_high: "Acerca el mapa para ver los árboles",
         no_trees_found: "No se encontraron árboles en esta área",
