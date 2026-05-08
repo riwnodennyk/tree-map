@@ -257,6 +257,7 @@ function treeFilter(input: any, bbox?: string): any {
             'node["natural"="shrub"]',
             'node["natural"="palm"]',
             'way["natural"="tree_row"]',
+            'way["natural"="wood"]',
             'relation["natural"="tree_row"]'
         ];
 
@@ -327,16 +328,26 @@ const MAX_CACHE_SIZE = 20 * 1024 * 1024; // 20MB
 
 function transformFeatures(features: any[]): any[] {
     return features.map((f: any) => {
-        if (f.geometry.type.includes('LineString')) {
-            const coords = f.geometry.type === 'LineString' ? f.geometry.coordinates : f.geometry.coordinates.flat(1);
-            if (coords.length === 0) return f;
-            const avgLng = coords.reduce((sum: number, c: any) => sum + (c[0] || 0), 0) / coords.length;
-            const avgLat = coords.reduce((sum: number, c: any) => sum + (c[1] || 0), 0) / coords.length;
+        const type = f.geometry.type;
+        if (type.includes('LineString') || type.includes('Polygon')) {
+            const coords = f.geometry.coordinates.flat(Infinity);
+            if (coords.length < 2) return f;
+            
+            let sumLng = 0;
+            let sumLat = 0;
+            let count = 0;
+            
+            for (let i = 0; i < coords.length; i += 2) {
+                sumLng += coords[i];
+                sumLat += coords[i + 1];
+                count++;
+            }
+            
             return {
                 ...f,
                 geometry: {
                     type: 'Point',
-                    coordinates: [avgLng, avgLat]
+                    coordinates: [sumLng / count, sumLat / count]
                 }
             };
         }
