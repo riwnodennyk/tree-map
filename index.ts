@@ -76,7 +76,7 @@ const treeLayer = L.geoJSON(undefined as any, {
     pointToLayer: (feature, latlng) => {
         const typeId = treeFilter(feature.properties);
         const treeDef = TREE_TYPES.find(t => t.id === typeId);
-        
+
         if (treeDef) {
             const icon = L.divIcon({
                 className: 'tree-icon-container',
@@ -264,7 +264,7 @@ TREE_TYPES.forEach(tree => {
     }
 });
 
-const KEYWORD_TAGS = ['genus', 'species', 'species:wikipedia', 'wikipedia', 'name', 'taxon'];
+const KEYWORD_TAGS = ['genus', 'species', 'species:wikipedia', 'wikipedia', 'name', 'taxon', 'leaf_type', 'family', 'taxon:name', 'order', 'natural'];
 const WIKIDATA_TAGS = ['species:wikidata', 'wikidata', 'taxon:wikidata', 'genus:wikidata'];
 
 function treeFilter(input: any, bbox?: string): any {
@@ -277,7 +277,9 @@ function treeFilter(input: any, bbox?: string): any {
             'node["natural"="palm"]',
             'way["natural"="tree_row"]',
             'way["natural"="wood"]',
-            'relation["natural"="tree_row"]'
+            'way["natural"="palm"]',
+            'relation["natural"="tree_row"]',
+            'relation["natural"="palm"]'
         ];
 
         baseTypes.forEach(type => {
@@ -307,6 +309,7 @@ function treeFilter(input: any, bbox?: string): any {
     } else {
         const props = input;
         const natural = (props['natural'] || '').toLowerCase();
+        const leaf_type = (props['leaf_type'] || '').toLowerCase();
         const wikidataValue = WIKIDATA_TAGS.map(tag => props[tag]).find(v => v) || '';
 
         for (const tree of TREE_TYPES) {
@@ -322,7 +325,11 @@ function treeFilter(input: any, bbox?: string): any {
             });
 
             // Special case for palms: also check natural tag
-            const isPalmTag = tree.id === 'palm' && natural === 'palm';
+            const isPalmTag = tree.id === 'palm' && (
+                natural === 'palm' ||
+                leaf_type === 'palm' ||
+                leaf_type === 'palmlike'
+            );
 
             if (keywordMatch || isPalmTag) {
                 return tree.id;
@@ -330,12 +337,6 @@ function treeFilter(input: any, bbox?: string): any {
         }
         return undefined;
     }
-}
-
-function getTreeColor(typeId: string | undefined): string {
-    if (!typeId) return '#ffffff';
-    const tree = TREE_TYPES.find(t => t.id === typeId);
-    return tree ? tree.color : '#ffffff';
 }
 
 let lastFetchedBounds: L.LatLngBounds | null = null;
@@ -351,17 +352,17 @@ function transformFeatures(features: any[]): any[] {
         if (type.includes('LineString') || type.includes('Polygon')) {
             const coords = f.geometry.coordinates.flat(Infinity);
             if (coords.length < 2) return f;
-            
+
             let sumLng = 0;
             let sumLat = 0;
             let count = 0;
-            
+
             for (let i = 0; i < coords.length; i += 2) {
                 sumLng += coords[i];
                 sumLat += coords[i + 1];
                 count++;
             }
-            
+
             return {
                 ...f,
                 geometry: {
