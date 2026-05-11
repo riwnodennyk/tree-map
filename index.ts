@@ -799,54 +799,110 @@ if (locateButton) {
         const originalColor = locateButton.style.color;
         locateButton.style.color = '#38bdf8';
         
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                map.setView([latitude, longitude], 17);
-                
-                // Add a temporary marker for the user's location
-                const userMarker = L.circleMarker([latitude, longitude], {
-                    radius: 8,
-                    color: '#38bdf8',
-                    fillColor: '#38bdf8',
-                    fillOpacity: 0.6,
-                    weight: 2
-                }).addTo(map);
+        const getPosition = (options: PositionOptions) => {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setView([latitude, longitude], 17);
+                    
+                    const userMarker = L.circleMarker([latitude, longitude], {
+                        radius: 8,
+                        color: '#38bdf8',
+                        fillColor: '#38bdf8',
+                        fillOpacity: 0.6,
+                        weight: 2
+                    }).addTo(map);
 
-                // Add a pulse effect
-                const pulse = L.circle([latitude, longitude], {
-                    radius: 50,
-                    color: '#38bdf8',
-                    fillOpacity: 0,
-                    weight: 1
-                }).addTo(map);
+                    const pulse = L.circle([latitude, longitude], {
+                        radius: 50,
+                        color: '#38bdf8',
+                        fillOpacity: 0,
+                        weight: 1
+                    }).addTo(map);
 
-                let radius = 50;
-                const animatePulse = () => {
-                    radius += 2;
-                    pulse.setRadius(radius);
-                    pulse.setStyle({ opacity: 1 - (radius / 200) });
-                    if (radius < 200) {
-                        requestAnimationFrame(animatePulse);
-                    } else {
-                        map.removeLayer(pulse);
+                    let radius = 50;
+                    const animatePulse = () => {
+                        radius += 2;
+                        pulse.setRadius(radius);
+                        pulse.setStyle({ opacity: 1 - (radius / 200) });
+                        if (radius < 200) {
+                            requestAnimationFrame(animatePulse);
+                        } else {
+                            map.removeLayer(pulse);
+                        }
+                    };
+                    requestAnimationFrame(animatePulse);
+
+                    setTimeout(() => {
+                        map.removeLayer(userMarker);
+                    }, 4000);
+
+                    locateButton.style.color = originalColor;
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    
+                    // Fallback to lower accuracy if high accuracy failed
+                    if (options.enableHighAccuracy && (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE)) {
+                        console.log('High accuracy failed, trying standard accuracy...');
+                        getPosition({ enableHighAccuracy: false, timeout: 5000, maximumAge: 10000 });
+                        return;
                     }
-                };
-                requestAnimationFrame(animatePulse);
 
-                setTimeout(() => {
-                    map.removeLayer(userMarker);
-                }, 4000);
+                    // Last resort: IP-based geolocation
+                    if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
+                        console.log('Browser geolocation failed, trying IP-based fallback...');
+                        fetch('https://ipapi.co/json/')
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.latitude && data.longitude) {
+                                    const lat = data.latitude;
+                                    const lon = data.longitude;
+                                    map.setView([lat, lon], 13); // Lower zoom for IP-based as it's less accurate
+                                    
+                                    const userMarker = L.circleMarker([lat, lon], {
+                                        radius: 8,
+                                        color: '#38bdf8',
+                                        fillColor: '#38bdf8',
+                                        fillOpacity: 0.6,
+                                        weight: 2
+                                    }).addTo(map);
 
-                locateButton.style.color = originalColor;
-            },
-            (error) => {
-                console.error('Geolocation error:', error);
-                locateButton.style.color = originalColor;
-                alert('Could not find your location');
-            },
-            { enableHighAccuracy: true }
-        );
+                                    setTimeout(() => map.removeLayer(userMarker), 4000);
+                                    locateButton.style.color = originalColor;
+                                } else {
+                                    throw new Error('IP geolocation failed');
+                                }
+                            })
+                            .catch(err => {
+                                console.error('IP fallback failed:', err);
+                                locateButton.style.color = originalColor;
+                                alert('Could not find your location. Please check your system settings.');
+                            });
+                        return;
+                    }
+
+                    locateButton.style.color = originalColor;
+                    
+                    let errorMsg = 'Could not find your location';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMsg = 'Location access denied. Please enable it in your browser settings.';
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        errorMsg = 'Location information is unavailable.';
+                    } else if (error.code === error.TIMEOUT) {
+                        errorMsg = 'Location request timed out.';
+                    }
+                    alert(errorMsg);
+                },
+                options
+            );
+        };
+
+        getPosition({ 
+            enableHighAccuracy: true,
+            timeout: 6000,
+            maximumAge: 0
+        });
     });
 }
 
