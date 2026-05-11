@@ -75,13 +75,25 @@ L.control.zoom({ position: 'topright' }).addTo(map);
 const treeLayer = L.geoJSON(undefined as any, {
     pointToLayer: (feature, latlng) => {
         const typeId = treeFilter(feature.properties);
-        const color = getTreeColor(typeId);
+        const treeDef = TREE_TYPES.find(t => t.id === typeId);
+        
+        if (treeDef) {
+            const icon = L.divIcon({
+                className: 'tree-icon-container',
+                html: `<div class="tree-icon-marker" style="background-color: ${treeDef.color};">
+                        <img src="${treeDef.icon}" alt="${treeDef.id}" />
+                       </div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            return L.marker(latlng, { icon });
+        }
 
         return L.circleMarker(latlng, {
-            radius: 8,
-            fillColor: color,
+            radius: 6,
+            fillColor: '#ffffff',
             color: '#fff',
-            weight: 2,
+            weight: 1,
             opacity: 1,
             fillOpacity: 0.8
         });
@@ -128,12 +140,14 @@ interface TreeDefinition {
     color: string;
     keywords: string[]; // Combined genus, wikiKeywords, and nameKeywords
     wikidata: string[];
+    icon: string;
 }
 
 const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'palm',
         color: '#22c55e',
+        icon: 'icons/palm.png',
         keywords: [
             'Phoenix', 'Washingtonia', 'Trachycarpus', 'Chamaerops', 'Areca', 'Cocos', 'Howea', 'Syagrus',
             'Brahea', 'Livistona', 'Rhapis', 'Sabal', 'Archontophoenix', 'Dypsis', 'Roystonea', 'Bismarckia',
@@ -186,6 +200,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'magnolia',
         color: '#9d09ab',
+        icon: 'icons/magnolia.png',
         keywords: ['Magnolia'],
         wikidata: [
             'Q157017', // Magnolia (Genus)
@@ -200,6 +215,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'cherry',
         color: '#ff6363',
+        icon: 'icons/cherry.png',
         keywords: ['Prunus', 'Cherry', 'Sakura', 'вишня', 'сакура'],
         wikidata: [
             'Q190545', // Prunus (Genus)
@@ -216,6 +232,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'platan',
         color: '#4287f5',
+        icon: 'icons/platan.png',
         keywords: ['Platanus', 'Platan', 'платан'],
         wikidata: [
             'Q163025', // Platanus (Genus)
@@ -229,6 +246,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'syringa',
         color: '#a855f7',
+        icon: 'icons/syringa.svg',
         keywords: ['Syringa', 'Lilac', 'бузок', 'сирень', 'Lilas', 'Flieder', 'Lila'],
         wikidata: [
             'Q157011', // Syringa (Genus)
@@ -242,7 +260,7 @@ const TREE_TYPES: TreeDefinition[] = [
 TREE_TYPES.forEach(tree => {
     const checkbox = document.querySelector(`.custom-checkbox.${tree.id}`) as HTMLElement;
     if (checkbox) {
-        checkbox.style.backgroundColor = tree.color;
+        checkbox.style.borderColor = tree.color;
     }
 });
 
