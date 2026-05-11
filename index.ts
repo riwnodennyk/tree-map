@@ -19,6 +19,8 @@ if (metaDescription) metaDescription.setAttribute('content', t.description);
 
 const searchInput = document.getElementById('search-input') as HTMLInputElement;
 if (searchInput) searchInput.placeholder = t.search_placeholder;
+const locateButton = document.getElementById('locate-button') as HTMLButtonElement;
+if (locateButton) locateButton.title = t.locate_me;
 
 const loadingText = document.querySelector('#loading span') as HTMLElement;
 if (loadingText) loadingText.innerText = t.loading_data;
@@ -785,6 +787,68 @@ searchInput.addEventListener('keydown', async (e) => {
         }
     }
 });
+
+// --- Locate Me Functionality ---
+if (locateButton) {
+    locateButton.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        const originalColor = locateButton.style.color;
+        locateButton.style.color = '#38bdf8';
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                map.setView([latitude, longitude], 17);
+                
+                // Add a temporary marker for the user's location
+                const userMarker = L.circleMarker([latitude, longitude], {
+                    radius: 8,
+                    color: '#38bdf8',
+                    fillColor: '#38bdf8',
+                    fillOpacity: 0.6,
+                    weight: 2
+                }).addTo(map);
+
+                // Add a pulse effect
+                const pulse = L.circle([latitude, longitude], {
+                    radius: 50,
+                    color: '#38bdf8',
+                    fillOpacity: 0,
+                    weight: 1
+                }).addTo(map);
+
+                let radius = 50;
+                const animatePulse = () => {
+                    radius += 2;
+                    pulse.setRadius(radius);
+                    pulse.setStyle({ opacity: 1 - (radius / 200) });
+                    if (radius < 200) {
+                        requestAnimationFrame(animatePulse);
+                    } else {
+                        map.removeLayer(pulse);
+                    }
+                };
+                requestAnimationFrame(animatePulse);
+
+                setTimeout(() => {
+                    map.removeLayer(userMarker);
+                }, 4000);
+
+                locateButton.style.color = originalColor;
+            },
+            (error) => {
+                console.error('Geolocation error:', error);
+                locateButton.style.color = originalColor;
+                alert('Could not find your location');
+            },
+            { enableHighAccuracy: true }
+        );
+    });
+}
 
 // Close search results when clicking outside
 document.addEventListener('click', (e) => {

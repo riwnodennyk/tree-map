@@ -172,6 +172,30 @@
             outline: none;
         }
 
+        .locate-button {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            margin-right: 4px;
+        }
+
+        .locate-button:hover {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .locate-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
         .search-input::placeholder {
             color: #94a3b8;
         }
@@ -390,6 +414,16 @@
     <div class="search-container">
         <div class="search-input-wrapper">
             <input type="text" class="search-input" id="search-input" placeholder="..." autocomplete="off">
+            <button class="locate-button" id="locate-button" title="...">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <line x1="12" y1="1" x2="12" y2="4"></line>
+                    <line x1="12" y1="20" x2="12" y2="23"></line>
+                    <line x1="1" y1="12" x2="4" y2="12"></line>
+                    <line x1="20" y1="12" x2="23" y2="12"></line>
+                </svg>
+            </button>
         </div>
         <div class="search-results" id="search-results"></div>
         <div class="filter-container">

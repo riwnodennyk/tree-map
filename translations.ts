@@ -21,6 +21,7 @@ export interface Translation {
     zoom_too_high: string;
     no_trees_found: string;
     trees_shown: string;
+    locate_me: string;
 }
 
 export const translations: Record<string, Translation> = {
@@ -46,7 +47,8 @@ export const translations: Record<string, Translation> = {
         filter_trees: "Filter Trees",
         zoom_too_high: "Zoom in to see trees",
         no_trees_found: "No trees found in this area",
-        trees_shown: "{count} trees are shown"
+        trees_shown: "{count} trees are shown",
+        locate_me: "Locate me"
     },
     uk: {
         title: "Карта видів дерев",
@@ -70,7 +72,8 @@ export const translations: Record<string, Translation> = {
         filter_trees: "Фільтр дерев",
         zoom_too_high: "Наблизьте карту, щоб побачити дерева",
         no_trees_found: "Дерев не знайдено в цій області",
-        trees_shown: "Показано дерев: {count}"
+        trees_shown: "Показано дерев: {count}",
+        locate_me: "Де я?"
     },
     de: {
         title: "Baumarten-Karte",
@@ -94,7 +97,8 @@ export const translations: Record<string, Translation> = {
         filter_trees: "Bäume filtern",
         zoom_too_high: "Hineinzoomen, um Bäume zu sehen",
         no_trees_found: "In diesem Bereich wurden keine Bäume gefunden",
-        trees_shown: "{count} Bäume werden angezeigt"
+        trees_shown: "{count} Bäume werden angezeigt",
+        locate_me: "Meinen Standort finden"
     },
     fr: {
         title: "Carte des espèces d'arbres",
@@ -118,7 +122,8 @@ export const translations: Record<string, Translation> = {
         filter_trees: "Filtrer les arbres",
         zoom_too_high: "Zoomez pour voir les arbres",
         no_trees_found: "Aucun arbre trouvé dans cette zone",
-        trees_shown: "{count} arbres sont affichés"
+        trees_shown: "{count} arbres sont affichés",
+        locate_me: "Me localiser"
     },
     es: {
         title: "Mapa de especies de árboles",
@@ -142,6 +147,7 @@ export const translations: Record<string, Translation> = {
         filter_trees: "Filtrar árboles",
         zoom_too_high: "Acerca el mapa para ver los árboles",
         no_trees_found: "No se encontraron árboles en esta área",
-        trees_shown: "Se muestran {count} árboles"
+        trees_shown: "Se muestran {count} árboles",
+        locate_me: "Mi ubicación"
     }
 };
