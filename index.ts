@@ -149,7 +149,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'palm',
         color: '#22c55e',
-        icon: 'icons/palm.png',
+        icon: './icons/palm.png',
         keywords: [
             'Phoenix', 'Washingtonia', 'Trachycarpus', 'Chamaerops', 'Areca', 'Cocos', 'Howea', 'Syagrus',
             'Brahea', 'Livistona', 'Rhapis', 'Sabal', 'Archontophoenix', 'Dypsis', 'Roystonea', 'Bismarckia',
@@ -202,7 +202,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'magnolia',
         color: '#9d09ab',
-        icon: 'icons/magnolia.png',
+        icon: './icons/magnolia.png',
         keywords: ['Magnolia'],
         wikidata: [
             'Q157017', // Magnolia (Genus)
@@ -217,7 +217,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'cherry',
         color: '#ff6363',
-        icon: 'icons/cherry.png',
+        icon: './icons/cherry.png',
         keywords: ['Prunus', 'Cherry', 'Sakura', 'вишня', 'сакура'],
         wikidata: [
             'Q190545', // Prunus (Genus)
@@ -234,7 +234,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'platan',
         color: '#4287f5',
-        icon: 'icons/platan.png',
+        icon: './icons/platan.png',
         keywords: ['Platanus', 'Platan', 'платан'],
         wikidata: [
             'Q163025', // Platanus (Genus)
@@ -248,7 +248,7 @@ const TREE_TYPES: TreeDefinition[] = [
     {
         id: 'syringa',
         color: '#a855f7',
-        icon: 'icons/syringa.svg',
+        icon: './icons/syringa.svg',
         keywords: ['Syringa', 'Lilac', 'бузок', 'сирень', 'Lilas', 'Flieder', 'Lila'],
         wikidata: [
             'Q157011', // Syringa (Genus)
@@ -798,13 +798,13 @@ if (locateButton) {
 
         const originalColor = locateButton.style.color;
         locateButton.style.color = '#38bdf8';
-        
+
         const getPosition = (options: PositionOptions) => {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     map.setView([latitude, longitude], 17);
-                    
+
                     const userMarker = L.circleMarker([latitude, longitude], {
                         radius: 8,
                         color: '#38bdf8',
@@ -841,7 +841,7 @@ if (locateButton) {
                 },
                 (error) => {
                     console.error('Geolocation error:', error);
-                    
+
                     // Fallback to lower accuracy if high accuracy failed
                     if (options.enableHighAccuracy && (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE)) {
                         console.log('High accuracy failed, trying standard accuracy...');
@@ -859,7 +859,7 @@ if (locateButton) {
                                     const lat = data.latitude;
                                     const lon = data.longitude;
                                     map.setView([lat, lon], 13); // Lower zoom for IP-based as it's less accurate
-                                    
+
                                     const userMarker = L.circleMarker([lat, lon], {
                                         radius: 8,
                                         color: '#38bdf8',
@@ -883,7 +883,7 @@ if (locateButton) {
                     }
 
                     locateButton.style.color = originalColor;
-                    
+
                     let errorMsg = 'Could not find your location';
                     if (error.code === error.PERMISSION_DENIED) {
                         errorMsg = 'Location access denied. Please enable it in your browser settings.';
@@ -898,7 +898,7 @@ if (locateButton) {
             );
         };
 
-        getPosition({ 
+        getPosition({
             enableHighAccuracy: true,
             timeout: 6000,
             maximumAge: 0
